@@ -67,13 +67,29 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe('default-1')
   })
 
-  it('handles special characters in titles', async () => {
+  it('removes special characters from titles', async () => {
     const existingDocuments = new Set<string>()
 
     const result = await generateUniqueSlug('My@Special#API$Name', existingDocuments)
 
-    // Slugify only handles spaces and lowercase, special chars remain
-    expect(result).toBe('my@special#api$name')
+    // Slugify strips non-word, non-space characters (dots are allowed but none here)
+    expect(result).toBe('myspecialapiname')
+  })
+
+  it('preserves dots in titles', async () => {
+    const existingDocuments = new Set<string>()
+
+    const result = await generateUniqueSlug('My API v1.2.3', existingDocuments)
+
+    expect(result).toBe('my-api-v1.2.3')
+  })
+
+  it('increments slug with dots on collision', async () => {
+    const existingDocuments = new Set<string>(['my-api-v1.2.3'])
+
+    const result = await generateUniqueSlug('My API v1.2.3', existingDocuments)
+
+    expect(result).toBe('my-api-v1.2.3-1')
   })
 
   it('handles titles with multiple consecutive spaces', async () => {
@@ -137,13 +153,13 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe('camelcase-api-name')
   })
 
-  it('handles very long titles', async () => {
+  it('truncates titles to 255 characters', async () => {
     const existingDocuments = new Set<string>()
     const longTitle = 'A'.repeat(1000)
 
     const result = await generateUniqueSlug(longTitle, existingDocuments)
 
-    expect(result).toBe(longTitle.toLowerCase())
+    expect(result).toBe(longTitle.toLowerCase().slice(0, 255))
   })
 
   it('handles empty set of existing documents', async () => {
@@ -204,11 +220,11 @@ describe('generateUniqueSlug', () => {
     expect(result).toBe('my-api-中文-名称')
   })
 
-  it('handles emoji in titles', async () => {
+  it('removes emoji from titles', async () => {
     const existingDocuments = new Set<string>()
 
     const result = await generateUniqueSlug('My 🚀 API', existingDocuments)
 
-    expect(result).toBe('my-🚀-api')
+    expect(result).toBe('my-api')
   })
 })
